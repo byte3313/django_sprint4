@@ -114,6 +114,19 @@ class Post(PublishedModel):
     def __str__(self):
         return self.title
 
+    def save(self, *args, **kwargs):
+        if self.category is None:
+            default_cat, _ = Category.objects.get_or_create(
+                slug='uncategorized',
+                defaults={
+                    'title': 'Без категории',
+                    'description': 'Категория по умолчанию',
+                    'is_published': True,
+                }
+            )
+            self.category = default_cat
+        super().save(*args, **kwargs)
+
 
 class Comment(PublishedModel):
     """Модель комментария к публикации."""

@@ -29,13 +29,13 @@ def posts_with_unpublished_category(mixer: Mixer, user: Model):
 
 
 @pytest.fixture
-def future_posts(mixer: Mixer, user: Model, published_category):
+def future_posts(mixer: Mixer, user: Model):
     date_later_now = (
         timezone.now() + timedelta(days=date)
         for date in range(1, 11)
     )
     return mixer.cycle(N_PER_FIXTURE).blend(
-        "blog.Post", author=user, pub_date=date_later_now, category=published_category
+        "blog.Post", author=user, pub_date=date_later_now
     )
 
 
