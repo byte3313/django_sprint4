@@ -1,3 +1,7 @@
+{% if post.category %}
 <a class="text-muted" href="{% url 'blog:category_posts' post.category.slug %}">
   {{ post.category.title }}
 </a>
+{% else %}
+<span class="text-muted">Категория недоступна</span>
+{% endif %}
