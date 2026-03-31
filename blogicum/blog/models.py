@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth import get_user_model
 from django.utils.translation import gettext_lazy as _
+from django.utils import timezone
 
 User = get_user_model()
 
@@ -61,6 +62,19 @@ class Location(PublishedModel):
         return self.name
 
 
+class PostManager(models.Manager):
+    def published(self, for_user=None):
+        """Возвращает опубликованные посты."""
+        queryset = self.filter(
+            is_published=True,
+            pub_date__lte=timezone.now(),
+            category__is_published=True
+        )
+        if for_user and for_user.is_authenticated:
+            queryset = queryset | self.filter(author=for_user)
+        return queryset
+
+
 class Post(PublishedModel):
     title = models.CharField(
         _('Заголовок'),
@@ -105,6 +119,8 @@ class Post(PublishedModel):
         null=True,
         help_text=_('Загрузите изображение для публикации')
     )
+
+    objects = PostManager()
 
     class Meta:
         verbose_name = _('публикация')

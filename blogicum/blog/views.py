@@ -15,15 +15,6 @@ from .forms import PostForm, CommentForm
 User = get_user_model()
 
 
-def _get_published_posts(queryset):
-    """Фильтрует посты по публикации и дате."""
-    return queryset.filter(
-        is_published=True,
-        pub_date__lte=timezone.now(),
-        category__is_published=True
-    )
-
-
 def _paginate_queryset(request, queryset, per_page=None):
     """Возвращает страницу объектов с пагинацией."""
     if per_page is None:
@@ -35,12 +26,10 @@ def _paginate_queryset(request, queryset, per_page=None):
 
 def index(request):
     """Главная страница со списком публикаций."""
-    post_list = _get_published_posts(
-        Post.objects.select_related(
-            'author', 'category', 'location'
-        ).annotate(
-            comment_count=Count('comments')
-        )
+    post_list = Post.objects.published().select_related(
+        'author', 'category', 'location'
+    ).annotate(
+        comment_count=Count('comments')
     ).order_by('-pub_date')
 
     # Поиск по заголовку и тексту
@@ -61,16 +50,13 @@ def profile(request, username):
     """Страница пользователя со списком его публикаций."""
     author = get_object_or_404(User, username=username)
 
-    post_list = Post.objects.filter(
+    post_list = Post.objects.published(request.user).filter(
         author=author
     ).select_related(
         'category', 'location'
     ).annotate(
         comment_count=Count('comments')
     ).order_by('-pub_date')
-
-    if request.user != author:
-        post_list = _get_published_posts(post_list)
 
     # Фильтрация по категориям
     category_filter = request.GET.get('category', '').strip()
@@ -144,7 +130,7 @@ def post_detail(request, post_id):
 def post_edit(request, post_id):
     """Редактирование публикации - доступно только авторизованным авторам."""
     if not request.user.is_authenticated:
-        return redirect('{}?next={}'.format(reverse('login'), request.path))
+        return redirect(reverse('login') + '?next=' + request.path)
 
     post = get_object_or_404(Post, id=post_id)
 
@@ -266,14 +252,12 @@ def category_posts(request, category_slug):
         slug=category_slug
     )
 
-    post_list = _get_published_posts(
-        Post.objects.filter(
-            category=category
-        ).select_related(
-            'author', 'location'
-        ).annotate(
-            comment_count=Count('comments')
-        )
+    post_list = Post.objects.published().filter(
+        category=category
+    ).select_related(
+        'author', 'location'
+    ).annotate(
+        comment_count=Count('comments')
     ).order_by('-pub_date')
 
     # Поиск по заголовку в категории
